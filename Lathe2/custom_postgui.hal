@@ -1,0 +1,91 @@
+# Include your customized HAL commands here
+# The commands in this file are run after the AXIS GUI (including PyVCP panel) starts
+
+sets spindle-at-speed true
+
+# alias pin input.0.btn-top2 security-button
+
+
+
+
+
+  loadrt mux2 count=1
+ loadrt and2 count=2
+ loadrt toggle count=1
+
+ addf mux2.0 servo-thread
+ addf and2.0 servo-thread
+ addf and2.1 servo-thread
+ addf toggle.0 servo-thread
+
+
+  #feed speed override
+ net feedoverP halui.feed-override.increase <= input.0.abs-hat0x-is-pos
+ net feedoverN halui.feed-override.decrease <=  input.0.abs-hat0x-is-neg
+
+  #rapid speed override
+ #net rapidP halui.jog-speed <= input.0.abs-hat0y-is-neg
+ #net rapidN halui.jog-speed <= input.0.abs-hat0y-is-pos
+
+
+
+
+
+
+ # Speed with and witout security button
+ setp mux2.0.in0 0
+ setp mux2.0.in1 500
+
+  # map security button
+#  net secure-homing0 and2.0.in0 and2.1.in0 toggle.0.in  <= input.0.btn-top2
+  net secure-homing0 and2.0.in0 and2.1.in0 toggle.0.in  <= shuttlexpress.0.button-4
+
+ net joy-speed-1 mux2.0.sel <= toggle.0.out
+ net joy-speed-final halui.jog-speed <= mux2.0.out
+
+ #net joy-x-jog2 halui.jog.0.increment <= shuttlexpress.0.counts
+ #net joy-x-jog2 halui.jog.0.increment-pos <= shuttlexpress.0.button-0
+ #net joy-x-jog halui.jog.0.analog <= shuttlexpress.0.spring-wheel-f
+
+ net joy-x-jog halui.jog.0.analog <= input.0.abs-y-position 
+ net joy-z-jog halui.jog.2.analog <= input.0.abs-z-position 
+
+ # secure homing
+
+
+ net secure-homing1 and2.0.in1    <= input.0.btn-top
+ net secure-homing halui.home-all <= and2.0.out
+
+
+ #estop
+ net halui-estop halui.estop.activate <= input.0.btn-base3
+
+ # work coordinates
+ net sel-xto halui.mdi-command-00 <= input.0.btn-joystick
+ net sel-yto halui.mdi-command-01 <= input.0.btn-thumb
+ net sel-zto halui.mdi-command-02 <= input.0.btn-thumb2
+
+
+ # SPINDLE ENCODER
+
+
+ # add the encoder to HAL and attach it to threads.
+loadrt encoder num_chan=1
+addf encoder.update-counters base-thread
+addf encoder.capture-position servo-thread
+
+# set the HAL encoder to 100 pulses per revolution.
+setp encoder.0.position-scale 60
+
+# set the HAL encoder to non-quadrature simple counting using A only.
+setp encoder.0.counter-mode true
+
+# connect the HAL encoder outputs to LinuxCNC.
+net spindle-position encoder.0.position => motion.spindle-revs
+net spindle-velocity encoder.0.velocity => motion.spindle-speed-in
+net spindle-index-enable encoder.0.index-enable <=> motion.spindle-index-enable
+
+# connect the HAL encoder inputs to the real encoder.
+net spindle-phase-a parport.0.pin-13-in => encoder.0.phase-A => encoder.0.phase-Z
+#net spindle-phase-b encoder.0.phase-B
+#net spindle-index encoder.0.phase-Z <= parport.0.pin-11-in

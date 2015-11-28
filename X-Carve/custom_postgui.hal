@@ -1,0 +1,62 @@
+# Include your customized HAL commands here
+# The commands in this file are run after the AXIS GUI (including PyVCP panel) starts
+
+sets spindle-at-speed true
+
+# alias pin input.0.btn-top2 security-button
+
+
+
+
+
+  loadrt mux2 count=1
+ loadrt and2 count=2
+ loadrt toggle count=1
+
+ addf mux2.0 servo-thread
+ addf and2.0 servo-thread
+ addf and2.1 servo-thread
+ addf toggle.0 servo-thread
+
+
+  #feed speed override
+ net feedoverP halui.feed-override.increase <= input.0.abs-hat0x-is-pos
+ net feedoverN halui.feed-override.decrease <=  input.0.abs-hat0x-is-neg
+
+  #rapid speed override
+ #net rapidP halui.jog-speed <= input.0.abs-hat0y-is-neg
+ #net rapidN halui.jog-speed <= input.0.abs-hat0y-is-pos
+
+
+
+
+
+
+ # Speed with and witout security button
+ setp mux2.0.in0 0
+ setp mux2.0.in1 500
+
+  # map security button
+  net secure-homing0 and2.0.in0 and2.1.in0 toggle.0.in  <= input.0.btn-top2
+
+ net joy-speed-1 mux2.0.sel <= toggle.0.out
+ net joy-speed-final halui.jog-speed <= mux2.0.out
+
+ net joy-x-jog halui.jog.0.analog <= input.0.abs-x-position 
+ net joy-y-jog halui.jog.1.analog <= input.0.abs-y-position 
+ net joy-z-jog halui.jog.2.analog <= input.0.abs-rz-position 
+
+ # secure homing
+
+
+ net secure-homing1 and2.0.in1    <= input.0.btn-top
+ net secure-homing halui.home-all <= and2.0.out
+
+
+ #estop
+ net halui-estop halui.estop.activate <= input.0.btn-base3
+
+ # work coordinates
+ net sel-xto halui.mdi-command-00 <= input.0.btn-joystick
+ net sel-yto halui.mdi-command-01 <= input.0.btn-thumb
+ net sel-zto halui.mdi-command-02 <= input.0.btn-thumb2

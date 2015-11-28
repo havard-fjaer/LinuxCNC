@@ -1,0 +1,278 @@
+﻿
+ # # UNTESTED CONCEPT ONLY EDIT AND TEST BEFORE USING
+
+ #Sept 1, 2012
+ # FOR 4 AXIS MILL
+
+ #Sept 15, 2012 edit .axis to add mdi "axisui.set-mdi-mode" button 
+ #Sept 21, 2012 use flipflop to switch from manual to incremental and back 
+ #Sept 28, 2012 add beep 
+
+ # # features
+ #1 incremental jog
+ #2 e stop
+ #3 manual mode
+ #5 set work coordinates
+ #6 spindle and feed override 
+ #7 run stop pause resume
+ #8 go home
+ #9 toggle spindle
+ #10 mdi mode
+
+ loadrt or2 count=4
+ loadrt flipflop count=1
+ loadrt mux4 count=2
+ loadrt toggle count=1
+ loadrt near count=12
+ loadrt toggle2nist count=1
+ loadrt and2 count=20
+ loadrt mux2 count=4
+ loadrt not count=2
+
+ addf or2.0 servo-thread
+ addf or2.1 servo-thread
+ addf mux4.0 servo-thread
+
+ #1 incremental jog 
+ addf or2.2 servo-thread
+ addf or2.3 servo-thread
+ addf mux4.1 servo-thread
+ addf flipflop.0 servo-thread
+ addf mux2.0 servo-thread
+ addf mux2.1 servo-thread
+ addf mux2.2 servo-thread
+ addf near.0 servo-thread
+ addf near.1 servo-thread
+ addf near.2 servo-thread
+ addf near.3 servo-thread
+ addf near.4 servo-thread
+ addf near.5 servo-thread
+ addf and2.0 servo-thread
+ addf and2.1 servo-thread
+ addf and2.2 servo-thread
+ addf and2.3 servo-thread
+ addf and2.4 servo-thread
+ addf and2.5 servo-thread
+ addf mux2.3 servo-thread
+ addf and2.15 servo-thread
+ addf and2.16 servo-thread
+ addf and2.18 servo-thread
+ addf near.10 servo-thread
+ addf near.11 servo-thread
+ addf not.0 servo-thread
+
+ #5 set work coordinates
+ addf and2.6 servo-thread
+ addf and2.7 servo-thread
+ addf and2.8 servo-thread
+ addf and2.17 servo-thread
+
+ #7 run pause resume stop
+ addf and2.9 servo-thread
+ addf and2.10 servo-thread
+ addf and2.11 servo-thread
+ addf and2.12 servo-thread
+
+ #6 spindle and feed overide
+ addf near.6 servo-thread
+ addf near.7 servo-thread
+ addf near.8 servo-thread
+ addf near.9 servo-thread
+
+ #8 go home
+ addf and2.13 servo-thread
+
+ #9 toggle spindle
+ addf and2.14 servo-thread
+ addf toggle2nist.0 servo-thread
+ addf toggle.0 servo-thread
+
+ #10 MDI mode
+ addf not.1 servo-thread
+ addf and2.19 servo-thread
+
+ #1 use near for incremental jog moves, must push stick all the way for movement and to avoid unexpected movement by not
+ # pushing stick straight, sensitivity can be adjusted
+
+ setp near.0.in1 1
+ setp near.1.in1 1
+ setp near.2.in1 1
+ setp near.3.in1 -1
+ setp near.4.in1 -1
+ setp near.5.in1 -1
+ setp near.10.in1 1
+ setp near.11.in1 -1
+
+ # set sensitivity default near is 1 so below sets near to be no more than .1 difference (.9 to 1.1) 
+ setp near.0.difference .1
+ setp near.1.difference .1
+ setp near.2.difference .1
+ setp near.3.difference .1
+ setp near.4.difference .1
+ setp near.5.difference .1
+ setp near.10.difference .1
+ setp near.11.difference .1
+
+ # set the jog speed for the joypad again use numbers that make sense for your machine
+ setp mux4.0.in0 0  # this one must be 0 to prevent motion unless a button is pressed
+ setp mux4.0.in1 25
+ setp mux4.0.in2 100
+ setp mux4.0.in3 200
+
+ #1 set the size of incremental moves
+ setp mux4.1.in0 0
+ setp mux4.1.in1 .001
+ setp mux4.1.in2 .005
+ setp mux4.1.in3 .010
+
+ # To reverse the direction of an axis add the following, for analog mode only
+ setp input.0.abs-y-scale -127.5
+ setp input.0.abs-rz-scale -127.5
+
+ #6 spindle and feed overide set near
+ setp near.6.in1 1
+ setp near.7.in1 1
+ setp near.8.in1 1
+ setp near.9.in1 -1
+
+ setp near.6.difference .1
+ setp near.7.difference .1
+ setp near.8.difference .1
+ setp near.9.difference .1
+
+ #1 use button 4 to switch to incremental jog.  #7 use button 4 for stop program run
+ net button-4 and2.12.in1 and2.18.in0 <= input.0.btn-top
+ net jog-man-to-inc and2.18.in1 <= not.0.out
+ net jog-inc halui.mdi-command-05 flipflop.0.set <= and2.18.out
+
+ #1 use button 6 to switch to analog jog mode
+ net jog-analog halui.mdi-command-06 flipflop.0.reset <= input.0.btn-pinkie
+
+  # the following does the magic of setting the jog speeds
+
+ # # # change below for change of pin name from 2.n to 2.5
+ # # # net remote-speed-slow or2.0.in0 input.0.btn-trigger
+ # # # net remote-speed-slow or2.0.in0 input.0.btn-joystick
+
+ #1 use buttons 1 2 3 to set jog speed and incremental jog size  #7 use buttons 1 2 3 for run pause resume 
+ net remote-speed-slow or2.0.in0 or2.2.in0 and2.9.in1 input.0.btn-joystick
+ net remote-speed-medium or2.1.in0 or2.3.in0 and2.10.in1 input.0.btn-thumb
+ net remote-speed-fast or2.0.in1 or2.1.in1 or2.2.in1 or2.3.in1 and2.11.in1 input.0.btn-thumb2
+
+ net joy-speed-1 mux4.0.sel0 <= or2.0.out
+ net joy-speed-2 mux4.0.sel1 <= or2.1.out
+ net joy-speed-final halui.jog-speed <= mux4.0.out
+
+ #1 add
+ net jog-size-1 mux4.1.sel0 <= or2.2.out
+ net jog-size-2 mux4.1.sel1 <= or2.3.out
+
+ #1
+ net jog-size-final halui.jog.0.increment halui.jog.1.increment halui.jog.2.increment halui.jog.8.increment <= mux4.1.out
+ setp mux2.0.in1 0
+ setp mux2.1.in1 0
+ setp mux2.2.in1 0
+ setp mux2.3.in1 0
+
+ #1 hook up the joysticks
+ net joy-x-sig mux2.0.in0 near.0.in2 near.3.in2 <= input.0.abs-x-position 
+ net joy-y-sig mux2.1.in0 near.1.in2 near.4.in2 <= input.0.abs-y-position 
+ net joy-z-sig mux2.2.in0 near.2.in2 near.5.in2 <= input.0.abs-rz-position 
+ net joy-w-sig mux2.3.in0 near.10.in2 near.11.in2 <= input.0.abs-z-position
+
+ #1 send signal to analog jog if not in incremental jog mode
+ net joy-x-jog halui.jog.0.analog <= mux2.0.out
+ net joy-y-jog halui.jog.1.analog <= mux2.1.out
+ net joy-z-jog halui.jog.2.analog <= mux2.2.out
+ net joy-w-jog halui.jog.8.analog <= mux2.3.out
+
+ #1 switch from analog to incremental jogs 
+ net joginc and2.0.in1 and2.1.in1 and2.2.in1 and2.3.in1 and2.4.in1 and2.5.in1 mux2.0.sel and2.15.in1 and2.16.in1 mux2.1.sel mux2.2.sel   mux2.3.sel <= flipflop.0.out
+
+ # # if set for incremental and joystick is 1 or -1 make an incremental move
+
+ #1  and2 outputs to halui incremental jog
+ net jogincx_final halui.jog.0.increment-plus <= and2.0.out
+ net jogincy_final halui.jog.1.increment-plus <= and2.1.out
+ net jogincz_final halui.jog.2.increment-plus <= and2.2.out
+ net jogincxn_final halui.jog.0.increment-minus <= and2.3.out
+ net jogincyn_final halui.jog.1.increment-minus <= and2.4.out
+ net joginczn_final halui.jog.2.increment-minus <= and2.5.out
+ net jogincw_final halui.jog.8.increment-plus <= and2.15.out
+ net jogincwn_final halui.jog.8.increment-minus <= and2.16.out
+
+ #2 button 9 for estop
+ net halui-estop halui.estop.activate <= input.0.btn-base3
+
+ #3 push straight down on left stick to switch to manual mode
+ net axis-man-mode axisui.set-manual-mode <= input.0.btn-base5
+
+ #5 button 10 with each axis joystick to set work coordinates 
+ net button_10 input.0.btn-base4 => and2.6.in0 and2.7.in0 and2.8.in0 and2.17.in0
+
+ #  #  # MDI calls
+  #5 set work coordinates next four
+ net sel-xto halui.mdi-command-00 <= and2.6.out
+ net sel-yto halui.mdi-command-01 <= and2.7.out
+ net sel-zto halui.mdi-command-02 <= and2.8.out
+ net sel-wto halui.mdi-command-03 <= and2.17.out
+
+ # # # # #
+ #Uncomment and use the following MDI_COMMANDS in the .ini file in the HALUI section"
+ #these four set each axis to zero similar to touch off, but using G10 you can change to numbers to reflect the size of  #your edge finder these must be in the proper order
+ #MDI_COMMAND = G10 L20 P1 X-.125 M101
+ #MDI_COMMAND = G10 L20 P1 Y-.125 M102
+ #MDI_COMMAND = G10 L20 P1 Z0.000 M103
+ #MDI_COMMAND = G10 L20 P1 W0.000 M104
+
+ #this sets the file to be run for home
+ #MDI_COMMAND = o<home> call
+ # #<home> uses M105 for song M111 to erase message
+
+ #1 long beep for incremental, song for proportional
+ #MDI_COMMAND = M106
+ #MDI_COMMAND = M107
+ # # # # #
+
+ #1 and  #5
+ # and2.0 - and2.5 for incremental move and2.6 and2.7 and2.8 and2.17 set work coordinates
+ net xstick  and2.0.in0 and2.6.in1 <= near.0.out
+ net ystick  and2.1.in0 and2.7.in1 <= near.1.out
+ net zstick  and2.2.in0 and2.8.in1 <= near.2.out
+ net xstickneg  and2.3.in0 <= near.3.out
+ net ystickneg  and2.4.in0 <= near.4.out
+ net zstickneg  and2.5.in0 <= near.5.out
+ net wstick  and2.15.in0  and2.17.in1 <= near.10.out
+ net wstickneg  and2.16.in0 <= near.11.out
+
+ #6 use hat for feed speed override and spindle speed override
+
+ #feed speed override
+ net feedoverP halui.feed-override.increase <= input.0.abs-hat0x-is-pos
+ net feedoverN halui.feed-override.decrease <=  input.0.abs-hat0x-is-neg
+
+ #spindle speed override
+ net spindleP halui.spindle-override.increase <= input.0.abs-hat0y-is-neg
+ net spindleN halui.spindle-override.decrease <= input.0.abs-hat0y-is-pos
+
+ #7  #8  #9  #10 safety button use the 5 button on the joypad for safety combine with Spindle on off, Run Pause Resume Stop, Home
+ net safety_button5 and2.9.in0 and2.10.in0 and2.11.in0 and2.12.in0 and2.13.in0 and2.14.in0 not.0.in not.1.in <= input.0.btn-top2
+
+ net hal-joystart halui.program.run halui.mode.auto <= and2.9.out
+ net hal-joypause halui.program.pause <= and2.10.out
+ net hal-joyresume halui.program.resume <= and2.11.out
+ net hal-joystop halui.program.stop <= and2.12.out
+
+ #8 right stick down with safety to run sub program  #10 right stick down for MDI mode
+ net right_stick_down and2.13.in1 and2.19.in1 <= input.0.btn-base6
+ net MDI_mode_safety_off and2.19.in0 <= not.1.out
+ net MDI_mode axisui.set-mdi-mode <= and2.19.out
+ net go_home halui.mdi-command-04 <= and2.13.out
+
+ #9 toggle coolant on and off Safety and button 8
+ net button8 and2.14.in1 <= input.0.btn-base2
+ net tog_cool toggle.0.in <= and2.14.out
+ net togn_cool toggle2nist.0.in <= toggle.0.out
+ net cool_is_on toggle2nist.0.is-on <=  halui.flood.is-on
+ net spindle_on  halui.flood.on <= toggle2nist.0.on
+ net spindle_off halui.flood.off <= toggle2nist.0.off
