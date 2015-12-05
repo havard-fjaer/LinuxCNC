@@ -53,8 +53,8 @@ loadusr shuttlexpress /dev/hidraw0
  net joy-speed-1 mux2.0.sel <= toggle.0.out
  net joy-speed-final halui.jog-speed <= mux2.0.out
 
- setp input.0.abs-y-scale -127.5
- setp input.0.abs-rz-scale -127.5
+ #setp input.0.abs-y-scale -127.5
+ #setp input.0.abs-z-scale -127.5
  
  net joy-x-jog halui.jog.0.analog <= input.0.abs-x-position 
  net joy-y-jog halui.jog.1.analog <= input.0.abs-y-position 

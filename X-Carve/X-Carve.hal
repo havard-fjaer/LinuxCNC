@@ -19,7 +19,7 @@ addf stepgen.update-freq servo-thread
 addf pwmgen.update servo-thread
 addf pwmgen.make-pulses base-thread
 
-net probe parport.0.pin-15-in => motion.probe-input
+net probe parport.0.pin-15-in-not => motion.probe-input
 net spindle-cmd <= motion.spindle-speed-out => pwmgen.0.value
 net spindle-on <= motion.spindle-on => pwmgen.0.enable
 net spindle-pwm <= pwmgen.0.pwm
