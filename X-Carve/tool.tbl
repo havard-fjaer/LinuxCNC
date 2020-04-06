@@ -1,5 +1,0 @@
-T1 P1 Z0 D0.5 ;laser 
-T3 P2 Z0.1 D3 ;3mm 
-T8 P3 Z0 D2 ;#7 tap drill 
-T99999 P99999 Z0.1 ;big tool number 
-T32 P32 Z0.1 D5 ;added 20150419 
