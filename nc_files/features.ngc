@@ -1,0 +1,167 @@
+( defaults.ngc )
+;py,import interpreter
+	
+( Flood sub - turns on flood/mist depending on global parameters. )
+O<flood> SUB  
+	O<flood-if-01>IF [#<_global_flood>]
+		M7
+	O<flood-if-01>ENDIF
+	O<flood-if-02>IF [#<_global_mist>]
+		M8
+	O<flood-if-02>ENDIF
+O<flood> ENDSUB  
+
+( / defaults.ngc )
+
+(   Mill deafults )
+G17
+( / Mill deafults )
+
+
+
+O<cut-params> SUB
+	O<Set-cutting-params-0001> IF [TAN[#<_global_penetration_angle>] LE 0 AND  #<_paranoid> NE 0]
+		(DEBUG, Penetraion angle less or equal than 0! /#<_global_penetration_angle>/)
+		#1 = [1/0] (Raise div 0 error)
+	O<Set-cutting-params-0001> ELSEIF [TAN[#<_global_penetration_angle>] LE 0]
+		#<_global_penetration_angle> = 10
+	O<Set-cutting-params-0001> ENDIF
+	O<m03-if>IF [#<_global_test> EQ 0]
+		M03
+	O<m03-if>ENDIF
+O<cut-params> ENDSUB
+
+(Multipass sub definition)
+O<multipass_cspir> SUB
+	#1 = #<_circle-spiral>
+	#<sub> = #1
+	#<x0> = #2
+	#<y0> = #3
+	#<r> = #4
+	#<v> = #5
+	#<depth> = [#<_global_depth>]
+	#<step> = [#<_global_depth_step>]
+	#<surface> = [#<_global_surface>]
+	#<rappid> = [#<_global_rappid>]
+	#<final> = [#<_global_final>]
+	#<_new_spir_r>=[#<r>]
+	#<fixr> = #<r>
+	F#<_global_feed> S#<_global_spindle>
+	G0 Z#<rappid>
+	G0 X#<x0> Y#<y0>
+	#<z> = #<surface>
+	G1 Z#<z>
+	O<multipass-while> WHILE [#<z> GT [#<depth>+#<final>]]
+
+		#<z> = [#<z>-#<step>]
+		#<dz> = [#<step>]
+		O<multipass-if> IF [#<z> LT [#<depth>+#<final>]]
+			#<dz> = [#<z>+#<step>-#<depth>-#<final>]
+			#<z>=[#<depth>+#<final>]
+		O<multipass-if> ENDIF
+		(call pass sub with the restof parameters)
+		#<sub> = #1
+		O#1 CALL [#<x0>-#<fixr>] [#<y0>] [#<z>+#<dz>] [#<r>] [#<dz>] [#<v>]
+		#<r> = #<_new_spir_r>
+		O<multipass-if01> IF [#<_new_spir_r> LT 0]
+			#<final>=0
+			O<multipass-while> BREAK
+		O<multipass-if01> ENDIF
+	O<multipass-while> ENDWHILE
+
+	(Make final cut)
+	O<multipass-if02> IF [#<final> GT 0]
+		F#<_global_final_feed> S#<_global_final_spindle>
+(print, x=#<x0>,y=#<y0>,fixr=#<fixr>,depth=#<depth>,final=#<final>,r=#<r>,v=#<v>)
+		#<sub> = #1
+		O#1 CALL [#<x0>-#<fixr>] [#<y0>] [#<depth>+#<final>] [#<r>] [#<final>] [#<v>]
+	O<multipass-if02> ENDIF
+	#<sub> = #1
+	O#1 CALL [#<x0>-#<fixr>] [#<y0>] [#<depth>] [#<r>] [0] [#<v>]
+	G0 Z#<rappid>
+O<multipass_cspir> ENDSUB
+	(Circle sub definition)
+	#<_circle-spiral> = 10094 ; should be unique id
+	O#<_circle-spiral> SUB
+		#<cx> = #1
+		#<cy> = #2
+		#<z>  = #3
+		#<r>  = #4
+		#<stepz> = #5
+		#<v> = #6
+		#<pi> = [3.14159265]
+		#<precis> = [0.1]
+		#<delta>  = [360.000*#<precis>/[2*#<pi>*#<r>]]
+		#<dz> = [#<stepz>/[360.000/#<delta>]]
+		#<dr>  = [#<stepz>*TAN[#<v>]/[360.000/#<delta>]]
+		#<angle1>  = #<delta>
+		O<circle-spiral-do01> WHILE [#<angle1> LT 360.00]
+(print, START WHILE angle=#<angle1>)
+			#<z> = [#<z>-#<dz>]
+			#<_new_spir_r>=[#<_new_spir_r>-#<dr>]
+(print,new_spir_r=#<_new_spir_r>,dz=#<dz>,delta=#<delta>)
+			O<circle-spiral-if01> IF [#<_new_spir_r> GE 0]
+				#<spx> = [#<cx>+#<_new_spir_r>*COS[#<angle1>]]
+				#<spy> = [#<cy>-#<_new_spir_r>*SIN[#<angle1>]]
+(print, x=#<spx>,y=#<spy>,z=#<z>,angle=#<angle1>)
+				G1 X#<spx> Y#<spy> Z#<z>
+			O<circle-spiral-if01> ELSE
+(print, BREAK)
+				O<circle-spiral-do01> BREAK
+			O<circle-spiral-if01> ENDIF
+(print, FIN WHILE angle=#<angle1>)
+			#<angle1>  = [#<angle1> + #<delta>]
+		O<circle-spiral-do01> ENDWHILE
+	O#<_circle-spiral> ENDSUB
+
+(End definitions)
+
+
+
+
+	#<_global_tool_d>			= [9]
+	#<_global_depth_step>		= [#<_global_depth_step>]
+	#<_global_feed>				= [#<_global_feed>]
+	#<_global_spindle>			= [#<_global_spindle>]
+	#<_global_final>			= [#<_global_final>]
+	#<_global_final_feed>		= [#<_global_final_feed>]
+	#<_global_final_spindle>	= [#<_global_final_spindle>]
+	#<_global_penetration_feed>		= [#<_global_penetration_feed>]
+	#<_global_penetration_angle>	= [#<_global_penetration_angle>]
+
+
+
+
+#<_global_surface> =	[0]
+#<_global_depth> = [-15]
+#<_global_depth_step> = [1]
+#<_global_rappid> =		[10]
+#<_global_feed> =		[600]
+F[#<_global_feed>]
+#<_global_spindle> =	[10000]
+S[#<_global_spindle>]
+#<_global_final> =		[0]
+#<_global_final_feed> = [600]
+#<_global_final_spindle> = [10000]
+#<_global_flood> = 		[0]
+#<_global_mist> = 		[0]
+#<_global_test> = 		[0]
+#<_global_final_num> = 1
+#<_global_penetration_angle>	= [45]
+#<_global_penetration_feed> = [100]
+#<_paranoid> = [1]
+O<cut-params> CALL
+
+
+
+(Call circle sub cx cy r depth rappid)
+#<r> = [0/2]
+#<r> = [#<r> + 0.5*#<_global_tool_d>]
+#<x0> = [10+#<r>]
+#<y0> = [0]
+#<v> = [1]
+O<multipass_cspir> CALL [#<_circle-spiral>] [#<x0>] [#<y0>] [#<r>] [#<v>]
+
+
+
+M02

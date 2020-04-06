@@ -1,0 +1,219 @@
+# Include your customized HAL commands here
+# The commands in this file are run after the AXIS GUI (including PyVCP panel) starts
+
+sets spindle-at-speed true
+
+#######################################
+### Logitech Dual Action Controller ###
+#######################################
+
+loadusr -W hal_input -KRAL Dual
+
+ loadrt or2 count=2
+ loadrt mux4 count=1
+
+ addf or2.0 servo-thread
+ addf or2.1 servo-thread
+ addf mux4.0 servo-thread
+
+ # set the jog speed for the joypad again use numbers that make sense for your machine
+ setp mux4.0.in0 0 # this one must be 0 to prevent motion unless a button is pressed
+ setp mux4.0.in1 50
+ setp mux4.0.in2 250
+ setp mux4.0.in3 1500
+
+ # the following does the magic of setting the jog speeds
+ net remote-speed-slow or2.0.in0 input.0.btn-joystick
+ net remote-speed-medium or2.1.in0 input.0.btn-thumb
+ net remote-speed-fast or2.0.in1 or2.1.in1 input.0.btn-thumb2
+ 
+ # Map speed from buttons
+ net joy-speed-1 mux4.0.sel0 <= or2.0.out
+ net joy-speed-2 mux4.0.sel1 <= or2.1.out
+ # net joy-speed-final halui.axis.jog-speed <= mux4.0.out
+
+ # TODO: Map to axix.n.*
+ # Connect joystick to axis
+ #net joy-x-jog halui.axis.x.analog <= input.0.abs-x-position 
+ #net joy-y-jog halui.axis.y.analog <= input.0.abs-y-position 
+ #net joy-z-jog halui.axis.z.analog <= input.0.abs-rz-position 
+
+ # Invert axis
+ setp input.0.abs-y-scale -127.5
+ setp input.0.abs-rz-scale -127.5
+
+
+
+#########################
+### nanoKONTROL2 MIDI ###
+#########################
+
+loadusr -W midi -KRAL 
+
+### BUTTONS ###
+
+loadrt conv_s32_bit count=21
+addf conv-s32-bit.0 servo-thread
+addf conv-s32-bit.1 servo-thread
+addf conv-s32-bit.2 servo-thread
+addf conv-s32-bit.3 servo-thread
+addf conv-s32-bit.4 servo-thread
+addf conv-s32-bit.5 servo-thread
+addf conv-s32-bit.6 servo-thread
+addf conv-s32-bit.7 servo-thread
+addf conv-s32-bit.8 servo-thread
+addf conv-s32-bit.9 servo-thread
+addf conv-s32-bit.10 servo-thread
+addf conv-s32-bit.11 servo-thread
+addf conv-s32-bit.12 servo-thread
+addf conv-s32-bit.13 servo-thread
+addf conv-s32-bit.14 servo-thread
+addf conv-s32-bit.15 servo-thread
+addf conv-s32-bit.16 servo-thread
+addf conv-s32-bit.17 servo-thread
+addf conv-s32-bit.18 servo-thread
+addf conv-s32-bit.19 servo-thread
+addf conv-s32-bit.20 servo-thread
+loadrt not names=not-power,not-estop
+addf not-power servo-thread
+addf not-estop servo-thread
+
+# Run - 0
+net midi-1-controller-41-active midi.1.controller.41.out => conv-s32-bit.0.in
+setp conv-s32-bit.0.clamp 1
+net midi-run conv-s32-bit.0.out-of-range => halui.program.run
+
+# Stop - 1
+net midi-1-controller-42-active midi.1.controller.42.out => conv-s32-bit.1.in
+setp conv-s32-bit.1.clamp 1
+net midi-stop conv-s32-bit.1.out-of-range => halui.program.stop
+
+# Pause - 2
+net midi-1-controller-60-active midi.1.controller.60.out => conv-s32-bit.2.in
+setp conv-s32-bit.2.clamp 1
+net midi-pause conv-s32-bit.2.out-of-range => halui.program.pause
+
+# Resume - 3
+net midi-1-controller-62-active midi.1.controller.62.out => conv-s32-bit.3.in
+setp conv-s32-bit.3.clamp 1
+net midi-resume conv-s32-bit.3.out-of-range => halui.program.resume
+
+# Step - 4
+net midi-1-controller-44-active midi.1.controller.44.out => conv-s32-bit.4.in
+setp conv-s32-bit.4.clamp 1
+net midi-step conv-s32-bit.4.out-of-range => halui.program.step
+
+# Power - 5
+net midi-1-controller-45-active midi.1.controller.45.out => conv-s32-bit.5.in
+setp conv-s32-bit.5.clamp 1
+net midi-power-on conv-s32-bit.5.out-of-range => halui.machine.on not-power.in
+net midi-power-off not-power.out => halui.machine.off
+
+# E-stop - 6
+net midi-1-controller-43-active midi.1.controller.43.out => conv-s32-bit.6.in
+setp conv-s32-bit.6.clamp 1
+net midi-estop-activate conv-s32-bit.6.out-of-range => halui.estop.activate not-estop.in
+net midi-estop-reset not-estop.out => halui.estop.reset
+
+# Home - All - 7
+net midi-1-controller-36-active midi.1.controller.36.out => conv-s32-bit.7.in
+setp conv-s32-bit.7.clamp 1
+net midi-home-all conv-s32-bit.7.out-of-range => halui.home-all
+
+# Home - X - 8
+net midi-1-controller-37-active midi.1.controller.37.out => conv-s32-bit.8.in
+setp conv-s32-bit.8.clamp 1
+net midi-home-x conv-s32-bit.8.out-of-range => halui.joint.0.home
+
+# Home - Y - 9
+net midi-1-controller-38-active midi.1.controller.38.out => conv-s32-bit.9.in
+setp conv-s32-bit.9.clamp 1
+net midi-home-y conv-s32-bit.9.out-of-range => halui.joint.1.home
+
+# Home - Z - 10
+net midi-1-controller-39-active midi.1.controller.39.out => conv-s32-bit.10.in
+setp conv-s32-bit.10.clamp 1
+net midi-home-z conv-s32-bit.10.out-of-range => halui.joint.2.home
+
+# Touch off - All - 11
+net midi-1-controller-52-active midi.1.controller.52.out => conv-s32-bit.11.in
+setp conv-s32-bit.11.clamp 1
+net midi-touch-all conv-s32-bit.11.out-of-range => halui.mdi-command-00
+
+# Touch off - X - 12
+net midi-1-controller-53-active midi.1.controller.53.out => conv-s32-bit.12.in
+setp conv-s32-bit.12.clamp 1
+net midi-touch-x conv-s32-bit.12.out-of-range => halui.mdi-command-01
+
+# Touch off - Y - 13
+net midi-1-controller-54-active midi.1.controller.54.out => conv-s32-bit.13.in
+setp conv-s32-bit.13.clamp 1
+net midi-touch-y conv-s32-bit.13.out-of-range => halui.mdi-command-02
+
+# Touch off - Z - 14
+net midi-1-controller-55-active midi.1.controller.55.out => conv-s32-bit.14.in
+setp conv-s32-bit.14.clamp 1
+net midi-touch-z conv-s32-bit.14.out-of-range => halui.mdi-command-03
+
+# Travel to touch off - All - 15
+net midi-1-controller-68-active midi.1.controller.68.out => conv-s32-bit.15.in
+setp conv-s32-bit.15.clamp 1
+net midi-travel-all conv-s32-bit.15.out-of-range => halui.mdi-command-04
+
+# Travel to touch off - X - 16
+net midi-1-controller-69-active midi.1.controller.69.out => conv-s32-bit.16.in
+setp conv-s32-bit.16.clamp 1
+net midi-travel-x conv-s32-bit.16.out-of-range => halui.mdi-command-05
+
+# Travel to touch off - Y - 17
+net midi-1-controller-70-active midi.1.controller.70.out => conv-s32-bit.17.in
+setp conv-s32-bit.17.clamp 1
+net midi-travel-y conv-s32-bit.17.out-of-range => halui.mdi-command-06
+
+# Travel to touch off - Z - 18
+net midi-1-controller-71-active midi.1.controller.71.out => conv-s32-bit.18.in
+setp conv-s32-bit.18.clamp 1
+net midi-travel-z conv-s32-bit.18.out-of-range => halui.mdi-command-07
+
+# Spindle start - 19
+net midi-1-controller-34-active midi.1.controller.34.out => conv-s32-bit.19.in
+setp conv-s32-bit.19.clamp 1
+net midi-spindle-start conv-s32-bit.19.out-of-range => halui.spindle.start
+
+# Spindle stop - 20
+net midi-1-controller-50-active midi.1.controller.50.out => conv-s32-bit.20.in
+setp conv-s32-bit.20.clamp 1
+net midi-spindle-stop conv-s32-bit.20.out-of-range => halui.spindle.stop
+
+
+### SLIDES ###
+
+# Feed override
+setp halui.feed-override.scale 0.03937 # 5/127
+net midi-feed-override-counts midi.1.controller.0.out => halui.feed-override.counts
+
+# Rapid override
+setp halui.rapid-override.scale 0.0078 # 1/127
+net midi-rapid-override-counts midi.1.controller.1.out => halui.rapid-override.counts
+
+# Spindle override
+setp halui.spindle-override.scale 0.0094 # 1.2/127
+net midi-spindle-override-counts midi.1.controller.2.out => halui.spindle-override.counts
+
+# Jog speed
+loadrt mult2 count=1
+loadrt conv_s32_float count=1
+
+addf mult2.0 servo-thread
+addf conv-s32-float.0 servo-thread
+
+net midi-1-controller-3-out midi.1.controller.3.out => conv-s32-float.0.in
+net midi-1-controller-3-out-float conv-s32-float.0.out => mult2.0.in0
+setp mult2.0.in1 0.22 # 50/127
+net midi-jog-speed mult2.0.out => halui.jog-speed
+
+# Max velocity
+setp halui.max-velocity.scale 0.22 # 50/127
+net midi-max-velocity-counts midi.1.controller.4.out => halui.max-velocity.counts
+
+
